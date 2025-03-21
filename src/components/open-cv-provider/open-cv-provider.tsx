@@ -22,7 +22,7 @@ const OpenCVProvider: React.FC<PropsWithChildren<Props>> = (props) => {
       onRuntimeInitialized,
     };
     const script = document.createElement('script');
-    const opencvSrc = './js/opencv_4_10_0.js';
+    const opencvSrc = new URL("/js/opencv_4_10_0.js", import.meta.url).href;
     script.setAttribute('src', opencvSrc);
     document.body.appendChild(script);
   }, []);

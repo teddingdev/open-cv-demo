@@ -4,6 +4,13 @@
 
 .video {
   display: block;
+  background-color: aquamarine;
+
+}
+
+.canvas,
+.video {
+  transform: scaleX(-1);
 }
 
 .preview {

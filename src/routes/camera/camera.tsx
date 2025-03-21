@@ -1,10 +1,9 @@
-import { Card, Flex, Heading, Button, Select, Spinner, Table } from '@radix-ui/themes';
-import React, { useEffect, useState } from 'react';
+import { Card, Flex, Heading, Button, Select } from '@radix-ui/themes';
+import React, { useEffect } from 'react';
 import { CameraIcon } from '@radix-ui/react-icons';
 import styles from './camera.module.scss';
 import haarcascade_frontalface_default from '@/assets/haarcascades/haarcascade_frontalface_default.xml';
 import classNames from 'classnames';
-// import haarcascade_frontalcatface from '@/assets/haarcascades/haarcascade_frontalcatface.xml';
 
 type Props = {
   className?: string;
@@ -18,14 +17,21 @@ const CameraComponent: React.FC<Props> = ({ className, style, title }) => {
   const previewRef = React.useRef<HTMLImageElement>(null);
   const videoDevices = React.useRef<MediaDeviceInfo[]>([]);
   const [selectedDevice, setSelectedDevice] = React.useState<string>();
-  const [matchList, setMatchList] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+
+  const mediaConstraints: MediaStreamConstraints = {
+    video: {
+      facingMode: 'environment',
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+    audio: false,
+  };
 
   const getMedicaDevices = () => {
     // 获取 视频/音频 权限
     // 查询 当前可枚举设备
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
+      .getUserMedia(mediaConstraints)
       .then(() => {
         navigator.mediaDevices.enumerateDevices().then((devices) => {
           videoDevices.current = devices
@@ -39,8 +45,12 @@ const CameraComponent: React.FC<Props> = ({ className, style, title }) => {
       });
   };
 
-  const drawVideoToCanvas = (source: HTMLVideoElement, target: HTMLCanvasElement) => {
-    target.getContext('2d')!
+  const drawVideoToCanvas = (
+    source: HTMLVideoElement,
+    target: HTMLCanvasElement,
+  ) => {
+    target
+      .getContext('2d')!
       .drawImage(source, 0, 0, target.width, target.height);
   };
 
@@ -50,21 +60,15 @@ const CameraComponent: React.FC<Props> = ({ className, style, title }) => {
     // 将当前视频写入canvas画布
     drawVideoToCanvas(videoRef.current, canvasRef.current);
     const data = canvasRef.current!.toDataURL('image/png');
-    document.createElement('canvas')
+    document.createElement('canvas');
     previewRef.current!.setAttribute('src', data);
     canvasRef.current!.toBlob((image) => {
-      const snapshot = new File([image!], 'snapshot.png', { type: 'image/png' });
+      const snapshot = new File([image!], 'snapshot.png', {
+        type: 'image/png',
+      });
       const body = new FormData();
-      body.append('image_file', snapshot)
-      setLoading(true);
-      fetch('/PROXY_DOMAIN/search_face', { method: 'POST', body }).then(res => {
-        res.json().then(({ Data }) => {
-          console.log(Data);
-          setMatchList(Data.MatchList)
-          setLoading(false);
-        })
-      })
-    })
+      body.append('image_file', snapshot);
+    });
   };
 
   // load pre-trained classifiers
@@ -139,39 +143,41 @@ const CameraComponent: React.FC<Props> = ({ className, style, title }) => {
   useEffect(
     selectedDevice
       ? () => {
-        navigator.mediaDevices
-          .getUserMedia({ video: { deviceId: selectedDevice } })
-          .then((stream) => {
-            const track = stream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities();
-            const { width, height } = capabilities;
-            if (
-              width?.max &&
-              height?.max &&
-              videoRef.current &&
-              canvasRef.current
-            ) {
-              canvasRef.current.width = width.max;
-              canvasRef.current.height = height.max;
-              canvasRef.current.style.width = `${width.max / 2}px`;
-              canvasRef.current.style.height = `${height.max / 2}px`;
-              videoRef.current.width = width.max / 2;
-              videoRef.current.height = height.max / 2;
-              videoRef.current.srcObject = stream;
-              videoRef.current.play();
-              previewRef.current!.width = width.max / 2;
-              previewRef.current!.height = height.max / 2;
-              // 将当前视频写入canvas画布
-              // drawVideoToCanvas(canvasRef.current, width.max, height.max);
-              createFileFromUrl(
-                haarcascade_frontalface_default,
-                'haarcascade_frontalface_default.xml',
-                () => createProcessVideo(videoRef.current!.width, videoRef.current!.height),
-              );
-            }
-          });
-      }
-      : () => { },
+          navigator.mediaDevices
+            .getUserMedia({ video: { deviceId: selectedDevice } })
+            .then((stream) => {
+              const track = stream.getVideoTracks()[0];
+              const capabilities = track.getCapabilities();
+              const { width, height } = capabilities;
+              const canvas = canvasRef.current;
+              const video = videoRef.current;
+              const preview = previewRef.current;
+              if (width?.max && height?.max && video && canvas && preview) {
+                canvas.width = width.max;
+                canvas.height = height.max;
+                canvas.style.width = `${width.max / 2}px`;
+                canvas.style.height = `${height.max / 2}px`;
+                video.width = width.max / 2;
+                video.height = height.max / 2;
+                video.srcObject = stream;
+                video.play();
+                preview.width = width.max / 2;
+                preview.height = height.max / 2;
+                // 将当前视频写入canvas画布
+                // drawVideoToCanvas(canvasRef.current, width.max, height.max);
+                createFileFromUrl(
+                  haarcascade_frontalface_default,
+                  'haarcascade_frontalface_default.xml',
+                  () =>
+                    createProcessVideo(
+                      videoRef.current!.width,
+                      videoRef.current!.height,
+                    ),
+                );
+              }
+            });
+        }
+      : () => {},
     [selectedDevice],
   );
 
@@ -195,10 +201,21 @@ const CameraComponent: React.FC<Props> = ({ className, style, title }) => {
         </Select.Root>
       </Flex>
       <Flex gap="4" my="4" align="center" className="pos-relative">
-        <Heading className={styles.heading} size="4">{title}</Heading>
-        <div className='pos-relative'>
+        <Heading className={styles.heading} size="4">
+          {title}
+        </Heading>
+        <div className="pos-relative">
           <video ref={videoRef} className={styles.video} />
-          <canvas id="canvasOutput" ref={canvasRef} className={classNames(styles.canvas, 'pos-absolute', 'top-0px', 'right-0px')} />
+          <canvas
+            id="canvasOutput"
+            ref={canvasRef}
+            className={classNames(
+              styles.canvas,
+              'pos-absolute',
+              'top-0px',
+              'right-0px',
+            )}
+          />
           <Button
             size="3"
             className="pos-absolute right-4px bottom-4px cursor-pointer"
@@ -208,37 +225,14 @@ const CameraComponent: React.FC<Props> = ({ className, style, title }) => {
             Take Snapshot
           </Button>
         </div>
-        <Heading className={styles.heading} size="4">Snapshot Preview</Heading>
-        <img alt='Snapshot Preview' ref={previewRef} className={styles.preview} />
-      </Flex>
-      <Flex gap="4" my="4" align="center">
-        <Heading className={styles.heading} size="4">Result</Heading>
-        {
-          loading ? <Spinner /> : <Card >
-            {matchList.map((item, index) => {
-              return <div key={index}>{
-                <Table.Root>
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.ColumnHeaderCell>Full name</Table.ColumnHeaderCell>
-                      <Table.ColumnHeaderCell>Score</Table.ColumnHeaderCell>
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
-                    {
-                      item.FaceItems.map((face: any) => {
-                        return <Table.Row>
-                          <Table.RowHeaderCell>{face.ExtraData}</Table.RowHeaderCell>
-                          <Table.Cell>{face.Score}</Table.Cell>
-                        </Table.Row>
-                      })
-                    }
-                  </Table.Body>
-                </Table.Root>
-              }</div>
-            })}
-          </Card>
-        }
+        <Heading className={styles.heading} size="4">
+          Snapshot Preview
+        </Heading>
+        <img
+          alt="Snapshot Preview"
+          ref={previewRef}
+          className={styles.preview}
+        />
       </Flex>
     </Card>
   );
