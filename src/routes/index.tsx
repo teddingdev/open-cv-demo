@@ -1,9 +1,10 @@
-import { Navigate, RouteObject } from 'react-router';
+import { RouteObject } from 'react-router';
 import { BuildInfoComponent } from '@/components/build-info/build-info';
 import { OpenCVComponent } from './opencv/opencv';
 import { LayoutComponent } from '@/components/layout/layout';
 import { HumanComponent } from './human/human';
 import { CatsComponent } from './cats/cats';
+import { TensorFlowComponent } from './tensorflow/tensorflow';
 
 type RouteObjectWithMeta = RouteObject & {
   children?: RouteObjectWithMeta[];
@@ -15,10 +16,6 @@ const routes: RouteObjectWithMeta[] = [
     path: '/',
     element: <LayoutComponent />,
     children: [
-      {
-        index: true,
-        element: <Navigate to="/opencv" />,
-      },
       {
         path: 'opencv',
         element: <OpenCVComponent />,
@@ -36,6 +33,10 @@ const routes: RouteObjectWithMeta[] = [
             element: <CatsComponent />,
           },
         ],
+      },
+      {
+        path: 'tensorflow',
+        element: <TensorFlowComponent />,
       },
     ],
   },

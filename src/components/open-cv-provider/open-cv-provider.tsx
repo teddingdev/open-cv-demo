@@ -17,14 +17,18 @@ const OpenCVProvider: React.FC<PropsWithChildren<Props>> = (props) => {
   }, []);
 
   useEffect(() => {
-    window.Module = {
-      // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
-      onRuntimeInitialized,
-    };
-    const script = document.createElement('script');
-    const opencvSrc = new URL("/js/opencv_4_10_0.js", import.meta.url).href;
-    script.setAttribute('src', opencvSrc);
-    document.body.appendChild(script);
+    if (window.cv) {
+      setOpenCVReady(true);
+    } else {
+      window.Module = {
+        // https://emscripten.org/docs/api_reference/module.html#Module.onRuntimeInitialized
+        onRuntimeInitialized,
+      };
+      const script = document.createElement('script');
+      const opencvSrc = new URL('/js/opencv_4_10_0.js', import.meta.url).href;
+      script.setAttribute('src', opencvSrc);
+      document.body.appendChild(script);
+    }
   }, []);
 
   return openCVReady && props.children;

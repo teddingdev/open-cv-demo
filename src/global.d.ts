@@ -1,4 +1,4 @@
-declare const cv;
+declare var cv;
 declare var Module;
 
 declare module '*.xml' {
